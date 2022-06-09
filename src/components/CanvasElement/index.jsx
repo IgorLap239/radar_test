@@ -21,23 +21,46 @@ const CanvasElement = () => {
   let top = 0;
   let bottom = 0;
   const width = 100;
-  const height = 50;
+  const height = width/2;
+  let canvasWidth = 0;
+  let canvasHeight = 0;
+
+  const [size, setSize] = useState();
+  const resizeHanlder = () => {
+    const wi = window.innerWidth;
+    const he = window.innerHeight;
+
+    setSize({
+      wi: wi,
+      he: he,
+    });
+  };
+
+  useEffect(() => {
+    window.onresize = resizeHanlder;
+  }, []);
+
+  useEffect(() => {
+    console.log('1');
+  }, [size]);
 
   useEffect(() => {
     const canvasEle = canvas.current;
     canvasEle.width = canvasEle.clientWidth;
     canvasEle.height = canvasEle.clientHeight;
+    canvasWidth = canvasEle.clientWidth;
+    canvasHeight = canvasEle.clientHeight;
     ctx = canvasEle.getContext("2d");
   }, []);
 
   useEffect(() => {
-    console.log('rectang = ', rectang);
+    //console.log('rectang = ', rectang);
     const canvasEle = canvas.current;
     canvasEle.width = canvasEle.clientWidth;
     canvasEle.height = canvasEle.clientHeight;
     ctx = canvasEle.getContext("2d");
     draw();
-  }, [rectang]);
+  }, [rectang, size]);
 
   const randColor = () => {
     const r = Math.floor(Math.random() * (256)),
@@ -122,6 +145,12 @@ const CanvasElement = () => {
     if (dragTarget.y < 0) {
       dragTarget.y = 0;
     }
+    if ((dragTarget.x + width) > window.innerWidth * 0.8) {
+      dragTarget.x = window.innerWidth * 0.8 - width;
+    }
+    if ((dragTarget.y + height) > window.innerHeight * 0.9) {
+      dragTarget.y = window.innerHeight * 0.9 - height;
+    }
     draw();
   }
   const handleMouseUp = e => {
@@ -135,6 +164,14 @@ const CanvasElement = () => {
     if (dragTarget.y < 0) {
       dragTarget.y = 0;
       dragTarget.x += (width + 1);
+      checkPosition();
+    }
+    if ((dragTarget.x + width) > window.innerWidth * 0.8) {
+      dragTarget.x = window.innerWidth * 0.8 - width;
+      checkPosition();
+    }
+    if ((dragTarget.y + height) > window.innerHeight * 0.9) {
+      dragTarget.y = window.innerHeight * 0.9 - height;
       checkPosition();
     }
     draw();
@@ -206,7 +243,7 @@ const CanvasElement = () => {
         borders = true;
       }
     })
-    if (newRect.x < 0 || newRect.y < 0 || borders) {
+    if (newRect.x < 0 || newRect.y < 0 || borders || ((newRect.x + width) > window.innerWidth * 0.8) || ((newRect.y + height) > window.innerHeight * 0.9)) {
       return;
     }
     setRectang([...rectang, newRect]);
@@ -225,31 +262,34 @@ const CanvasElement = () => {
       }
     }
     if (connectRect.length === 2) {
-      setRectang(rectang.map(el => {
-        let newa = [];
-        if (el.id === connectRect[0] || el.id === connectRect[1]) {
-          let checkConnect = false;
-          el.connect.map((con, i) => {
-            const reverseArr = JSON.parse(JSON.stringify(connectRect))
-            if (JSON.stringify(con) === JSON.stringify(connectRect) || JSON.stringify(con) === JSON.stringify(reverseArr.reverse())) {
-              checkConnect = true;
-              newa = el.connect.filter((_, ind) => i !== ind);
+      if (connectRect[0] !== connectRect[1]) {
+        setRectang(rectang.map(el => {
+          let newa = [];
+          if (el.id === connectRect[0] || el.id === connectRect[1]) {
+            let checkConnect = false;
+            el.connect.map((con, i) => {
+              const reverseArr = JSON.parse(JSON.stringify(connectRect))
+              if (JSON.stringify(con) === JSON.stringify(connectRect) || JSON.stringify(con) === JSON.stringify(reverseArr.reverse())) {
+                checkConnect = true;
+                newa = el.connect.filter((_, ind) => i !== ind);
+              }
+            })
+            if (!checkConnect) {
+              return {...el, "connect": [...el.connect, [connectRect[0], connectRect[1]]]}
+            } else {
+              return {...el, "connect": newa}
             }
-          })
-          if (!checkConnect) {
-            return {...el, "connect": [...el.connect, [connectRect[0], connectRect[1]]]}
           } else {
-            return {...el, "connect": newa}
+            return el;
           }
-        } else {
-          return el;
-        }
-      })
-      )
+        })
+        )
+      }
       connectRect.length = 0
       draw();
     }
   };
+
 
   return (
     <canvas

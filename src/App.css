@@ -6,4 +6,5 @@
 
 .instruction {
   margin-left: 20px;
+  user-select: none;
 }

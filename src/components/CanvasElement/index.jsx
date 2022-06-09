@@ -10,26 +10,20 @@ const CanvasElement = () => {
     { id: 2, x: 400, y: 320, color: "green", connect:[/*[3,2]*/] }
   ]
   const connectRect = [];
-  const [rectang, setRectang] = useState(boxes);
+  const [rectangle, setRectangle] = useState(boxes);
   let isDown = false;
   let dragTarget = null;
   let startX = null;
   let startY = null;
-  let checked = true;
-  let right = 0;
-  let left = 0;
-  let top = 0;
-  let bottom = 0;
+  let tmpX = null;
+  let tmpY = null;
   const width = 100;
   const height = width/2;
-  let canvasWidth = 0;
-  let canvasHeight = 0;
 
   const [size, setSize] = useState();
   const resizeHanlder = () => {
     const wi = window.innerWidth;
     const he = window.innerHeight;
-
     setSize({
       wi: wi,
       he: he,
@@ -41,26 +35,12 @@ const CanvasElement = () => {
   }, []);
 
   useEffect(() => {
-    console.log('1');
-  }, [size]);
-
-  useEffect(() => {
-    const canvasEle = canvas.current;
-    canvasEle.width = canvasEle.clientWidth;
-    canvasEle.height = canvasEle.clientHeight;
-    canvasWidth = canvasEle.clientWidth;
-    canvasHeight = canvasEle.clientHeight;
-    ctx = canvasEle.getContext("2d");
-  }, []);
-
-  useEffect(() => {
-    //console.log('rectang = ', rectang);
     const canvasEle = canvas.current;
     canvasEle.width = canvasEle.clientWidth;
     canvasEle.height = canvasEle.clientHeight;
     ctx = canvasEle.getContext("2d");
     draw();
-  }, [rectang, size]);
+  }, [rectangle, size]);
 
   const randColor = () => {
     const r = Math.floor(Math.random() * (256)),
@@ -72,8 +52,8 @@ const CanvasElement = () => {
 
   const draw = () => {
     ctx.clearRect(0, 0, canvas.current.clientWidth, canvas.current.clientHeight);
-    rectang.map(info => drawLine(info));
-    rectang.map(info => drawFillRect(info));
+    rectangle.map(info => drawLine(info));
+    rectangle.map(info => drawFillRect(info));
   }
 
   const drawLine = (info) => {
@@ -83,7 +63,7 @@ const CanvasElement = () => {
       let x1 = 0;
       let y1 = 0;
       info.connect.forEach((elem) => {
-          rectang.map(el => {
+          rectangle.map(el => {
             if (el.id === elem[0]) {
               x = el.x + width/2;
               y = el.y + height/2;
@@ -110,8 +90,8 @@ const CanvasElement = () => {
 
   const hitBox = (x, y) => {
     let isTarget = null;
-    for (let i = 0; i < rectang.length; i++) {
-      const box = rectang[i];
+    for (let i = 0; i < rectangle.length; i++) {
+      const box = rectangle[i];
       if (x >= box.x && x <= box.x + width && y >= box.y && y <= box.y + height) {
         dragTarget = box;
         isTarget = true;
@@ -126,6 +106,8 @@ const CanvasElement = () => {
     startX = parseInt(e.clientX - rect.left);
     startY = parseInt(e.clientY - rect.top);
     isDown = hitBox(startX, startY);
+    tmpX = dragTarget.x;
+    tmpY = dragTarget.y;
   }
 
   const handleMouseMove = e => {
@@ -153,6 +135,7 @@ const CanvasElement = () => {
     }
     draw();
   }
+
   const handleMouseUp = e => {
     if (dragTarget) {
       checkPosition();
@@ -181,47 +164,18 @@ const CanvasElement = () => {
   }
 
   const checkPosition = () => {
-    checked = true;
-    rectang.forEach(el => {
+    rectangle.forEach(el => {
       if (el.id !== dragTarget.id) {
-        if ((dragTarget.x > el.x && dragTarget.x < (el.x + width)) && (((dragTarget.y >= el.y && dragTarget.y <= (el.y + height))) || (((dragTarget.y + height) >= el.y && (dragTarget.y + height) <= (el.y + height))))) {
-          const dY = dragTarget.y - el.y
-          if (dY < 30 && dY > -20) {
-            //dragTarget.x = el.x + 101 * left;
-            dragTarget.x = el.x + (width + 1) + ((width + 1) * left);
-            left += 1;
-          } else if (dY > 30) {
-            dragTarget.y = el.y + (height + 1) + ((height + 1) * top);
-            top += 1; 
-          } else if (dY < 0) {
-            dragTarget.y = el.y - (height + 1) + ((height + 1) * bottom);
-            bottom += 1;
-          }
-          checked = false;
-        } else if (((dragTarget.x + width) >= el.x && (dragTarget.x + width) <= (el.x + width)) && (((dragTarget.y >= el.y && dragTarget.y <= (el.y + height))) || (((dragTarget.y + height) >= el.y && (dragTarget.y + height) <= (el.y + height)))))  {
-          const dY = dragTarget.y - el.y
-          if (dY < 30 && dY > -20) {
-            dragTarget.x = el.x - (width + 1) - ((width + 1) * right);
-            right += 1;
-          } else if (dY > 30) {
-            dragTarget.y = el.y + (height + 1) + ((height + 1) * top);
-            top += 1; 
-          } else if (dY < 0) {
-            dragTarget.y = el.y - (height + 1) + ((height + 1) * bottom);
-            bottom += 1;
-          }
-          checked = false;
+        if (((dragTarget.x > el.x && dragTarget.x < (el.x + width)) && (((dragTarget.y >= el.y && dragTarget.y <= (el.y + height))) ||
+           (((dragTarget.y + height) >= el.y && (dragTarget.y + height) <= (el.y + height))))) || 
+           (((dragTarget.x + width) >= el.x && (dragTarget.x + width) <= (el.x + width)) && (((dragTarget.y >= el.y && dragTarget.y <= (el.y + height))) ||
+           (((dragTarget.y + height) >= el.y && (dragTarget.y + height) <= (el.y + height)))))) 
+        {
+          dragTarget.x = tmpX;
+          dragTarget.y = tmpY;
         }
       }
     })
-    if (!checked) {
-      checkPosition();
-    } else {
-      right = 0;
-      left = 0;
-      top = 0;
-      bottom = 0;
-    }
   }
 
   const handleMouseOut = e => {
@@ -233,9 +187,9 @@ const CanvasElement = () => {
     const rect = canvas.current.getBoundingClientRect()
     const mouseX = parseInt(e.clientX - rect.left);
     const mouseY = parseInt(e.clientY - rect.top);
-    let newRect = { id: rectang.length, x: mouseX-width/2, y: mouseY-height/2, color: color, connect: [] }
+    let newRect = { id: rectangle.length, x: mouseX-width/2, y: mouseY-height/2, color: color, connect: [] }
     let borders = false;
-    rectang.forEach(el => {
+    rectangle.forEach(el => {
       if (newRect.x >= el.x && newRect.x <= (el.x + width) && newRect.y >= el.y && newRect.y <= (el.y + height)) {
         borders = true;
       } else if (((newRect.x >= el.x && newRect.x <= (el.x + width)) || ((newRect.x + width) >= el.x && (newRect.x + 100) <= (el.x + 100))) && 
@@ -246,7 +200,7 @@ const CanvasElement = () => {
     if (newRect.x < 0 || newRect.y < 0 || borders || ((newRect.x + width) > window.innerWidth * 0.8) || ((newRect.y + height) > window.innerHeight * 0.9)) {
       return;
     }
-    setRectang([...rectang, newRect]);
+    setRectangle([...rectangle, newRect]);
   }
 
   const handleClick = (e) => {
@@ -254,8 +208,8 @@ const CanvasElement = () => {
     const rect = canvas.current.getBoundingClientRect()
     const x = parseInt(e.clientX - rect.left);
     const y = parseInt(e.clientY - rect.top);
-    for (let i = 0; i < rectang.length; i++) {
-      const box = rectang[i];
+    for (let i = 0; i < rectangle.length; i++) {
+      const box = rectangle[i];
       if (x >= box.x && x <= box.x + width && y >= box.y && y <= box.y + height) {
         connectRect.push(box.id)
         break;
@@ -263,7 +217,7 @@ const CanvasElement = () => {
     }
     if (connectRect.length === 2) {
       if (connectRect[0] !== connectRect[1]) {
-        setRectang(rectang.map(el => {
+        setRectangle(rectangle.map(el => {
           let newa = [];
           if (el.id === connectRect[0] || el.id === connectRect[1]) {
             let checkConnect = false;
@@ -273,6 +227,7 @@ const CanvasElement = () => {
                 checkConnect = true;
                 newa = el.connect.filter((_, ind) => i !== ind);
               }
+              return null;
             })
             if (!checkConnect) {
               return {...el, "connect": [...el.connect, [connectRect[0], connectRect[1]]]}
